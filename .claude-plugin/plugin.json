@@ -1,0 +1,9 @@
+{
+  "name": "indmoney-networth-log",
+  "version": "1.3.0",
+  "description": "Daily net worth log from INDmoney for you and your family, with a private dashboard and a morning scheduled task.",
+  "author": { "name": "Nagarajan Seshadri", "url": "https://nagarajanseshadri.com" },
+  "homepage": "https://nagarajanseshadri.com",
+  "license": "MIT",
+  "keywords": ["indmoney", "net worth", "personal finance", "dashboard", "india"]
+}

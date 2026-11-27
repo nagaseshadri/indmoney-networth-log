@@ -1,0 +1,12 @@
+{
+  "name": "nagarajan-seshadri",
+  "owner": { "name": "Nagarajan Seshadri", "url": "https://nagarajanseshadri.com" },
+  "plugins": [
+    {
+      "name": "indmoney-networth-log",
+      "source": "./",
+      "description": "Daily net worth log from INDmoney for you and your family, with a private dashboard and a morning scheduled task.",
+      "version": "1.3.0"
+    }
+  ]
+}
