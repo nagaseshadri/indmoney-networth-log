@@ -1,0 +1,11 @@
+{
+  "name": "indmoney-networth-log",
+  "version": "1.3.0",
+  "description": "Dashboard code for the INDmoney Net Worth Log Claude skill. Loaded by each user's private dashboard via jsDelivr.",
+  "files": ["dist/dashboard.js", "dist/standalone.html"],
+  "license": "MIT",
+  "author": "Nagarajan Seshadri (https://nagarajanseshadri.com)",
+  "homepage": "https://nagarajanseshadri.com/networth-log/",
+  "repository": { "type": "git", "url": "git+https://github.com/nagaseshadri/indmoney-networth-log.git" },
+  "keywords": ["indmoney", "net worth", "claude", "dashboard"]
+}

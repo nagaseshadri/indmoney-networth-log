@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Net worth log</title>
+<meta name="nwlog-shell" content="1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark}
+body{margin:0;font:16px/1.55 Manrope,system-ui,sans-serif;background:light-dark(#fff,#101418);color:light-dark(#101418,#eef1f4)}
+.nwlog-wait{max-width:640px;margin:0 auto;padding:clamp(28px,6vw,64px) max(5vw,16px)}
+.nwlog-wait p{margin:0 0 10px}.nwlog-wait .muted{color:light-dark(#56616b,#9aa6b1);font-size:14px}
+</style>
+</head>
+<body>
+<div id="nwlog-root"><div class="nwlog-wait" id="nwlog-wait"><p>Loading your net worth log…</p></div></div>
+<script>
+{
+  // The dashboard's code is published as an npm package and served by jsDelivr, so every
+  // dashboard picks up 1.x improvements automatically. Your data never leaves Claude.
+  const src = "https://cdn.jsdelivr.net/npm/indmoney-networth-log@1/dist/dashboard.js";
+  const fail = () => {
+    const root = document.getElementById('nwlog-root');
+    if (!root || root.getAttribute('data-loaded')) return;
+    root.innerHTML = '<div class="nwlog-wait"><p><b>The dashboard couldn’t load.</b></p>' +
+      '<p>Check your internet connection and refresh. Your logged days are safe: they are stored separately and the morning task keeps saving them.</p>' +
+      '<p class="muted">If this keeps happening, see https://nagarajanseshadri.com/networth-log/</p></div>';
+  };
+  const s = document.createElement('script');
+  s.src = src; s.async = true; s.crossOrigin = 'anonymous';
+  s.addEventListener('error', fail);
+  document.body.appendChild(s);
+  setTimeout(fail, 20000);
+}
+</script>
+</body>
+</html>

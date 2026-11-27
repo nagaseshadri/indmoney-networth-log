@@ -1,0 +1,368 @@
+/*! INDmoney Net Worth Log dashboard v1.3.0 | MIT | https://nagarajanseshadri.com/networth-log/ */
+(function () {
+  var root = document.getElementById('nwlog-root');
+  if (!root || root.getAttribute('data-loaded')) return;
+  root.setAttribute('data-loaded', '1');
+  window.NWLOG_VERSION = "1.3.0";
+  var css = "/* VOICE: a calm personal ledger, newspaper graphics-desk clarity, no props.\n   IDEA: a daily bank passbook: one line per morning, the balance carried forward.\n   PICTURE: the net worth line across the days, latest point marked, crosshair tooltip.\n   COLOUR and TYPE: white, ink #101418, one warm yellow slab behind the key figure; Manrope.\n   LAYOUT: key figure + chart in first screen, then what moved, then the daily ledger. */\n:root{color-scheme:light dark;--bg:light-dark(#ffffff,#101418);--ink:light-dark(#101418,#eef1f4);--mute:light-dark(#5b6670,#9aa6b1);--line:light-dark(#e3e7eb,#283039);--slab:#ffd84a;--slabInk:#101418;--up:light-dark(#127a52,#4cc38a);--down:light-dark(#b4410f,#f08a5d);--plot:light-dark(#101418,#eef1f4);--card:light-dark(#f6f7f9,#171c22)}\n:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}\n*{box-sizing:border-box;min-width:0}\n[hidden]{display:none!important}\nbody{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Manrope,system-ui,sans-serif;overflow-x:clip}\n.band{padding:clamp(24px,4vw,56px) max(5vw,16px)}\n.wrap{max-width:1240px;margin:0 auto}\nh1{font-size:clamp(28px,4.2vw,46px);line-height:1.05;font-weight:800;margin:0 0 10px;text-wrap:balance;letter-spacing:-.01em}\nh2{font-size:22px;line-height:1.2;margin:0 0 6px;font-weight:700}\n.sub{color:var(--mute);margin:0 0 22px;max-width:70ch}\n.top{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:clamp(16px,3vw,40px);align-items:stretch}\n.slab{background:var(--slab);color:var(--slabInk);border-radius:6px;padding:22px 22px 20px;display:flex;flex-direction:column;gap:14px}\n.slab .lab{font-size:14px;font-weight:600}\n.slab .big{font-size:clamp(34px,5vw,48px);font-weight:800;line-height:1;white-space:nowrap}\n.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15px}\n.kv dt{font-weight:500}.kv dd{margin:0;text-align:right;font-weight:700;white-space:nowrap}\n.fig{position:relative;min-height:340px}.fig>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}\n.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;padding:7px 10px;border-radius:5px;white-space:nowrap;opacity:0;transform:translate(-50%,-115%);transition:opacity .12s}\n.tip b{display:block;font-size:15px}\n.note{font-size:13px;color:var(--mute);margin:10px 0 0}\n.empty{border:1px dashed var(--line);border-radius:6px;padding:28px;color:var(--mute)}\n.moves{display:grid;gap:10px;margin-top:18px;max-width:900px}\n.mv{display:grid;grid-template-columns:9.5em minmax(0,1fr) 7.5em;gap:12px;align-items:center;font-size:15px}\n.mv .track{position:relative;height:14px}\n.mv .axis{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line)}\n.mv .bar{position:absolute;top:0;height:14px;border-radius:4px}\n.mv .val{text-align:right;font-weight:700;white-space:nowrap}\n.up{color:var(--up)}.down{color:var(--down)}\n.scroll{overflow-x:auto}\ntable{border-collapse:collapse;width:100%;font-size:15px;margin-top:16px}\nth,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}\nth{font-weight:600;color:var(--mute);font-size:13px}\nth:first-child,td:first-child{text-align:left}\ntbody tr:hover{background:var(--card)}\n.status{font-size:14px;color:var(--mute);margin:0 0 14px}\n.exp{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;margin:-6px 6px -6px 0;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:700 16px/1 Manrope,system-ui,sans-serif;cursor:pointer;vertical-align:middle}\n.exp:hover{background:var(--card)}.exp:focus-visible{outline:2px solid var(--slab);outline-offset:1px}\n.upd{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:\"badge t1 btn\" \"badge t2 btn\" \"badge t3 btn\" \"badge t4 btn\";gap:6px 16px;align-items:start;margin:0 0 20px;padding:16px 18px;border-radius:8px;background:var(--slab);color:var(--slabInk);font-size:15px;line-height:1.45}\n.upd .badge{grid-area:badge;background:var(--slabInk);color:var(--slab);font-weight:800;font-size:12px;letter-spacing:.02em;padding:5px 9px;border-radius:5px;white-space:nowrap}\n.upd .t1{grid-area:t1;font-size:17px;font-weight:800}.upd .t2{grid-area:t2}.upd .t3{grid-area:t3}.upd .t4{grid-area:t4}\n.upd b{font-weight:800}\n.upd .x{grid-area:btn;min-height:36px;padding:0 12px;border:1px solid rgba(16,20,24,.35);border-radius:999px;background:none;color:inherit;font:600 13px Manrope,system-ui,sans-serif;cursor:pointer;white-space:nowrap}\n.upd .copy{min-height:44px;padding:0 18px;margin:4px 8px 4px 0;border:0;border-radius:999px;background:var(--slabInk);color:var(--slab);font:800 15px Manrope,system-ui,sans-serif;cursor:pointer}\n.upd .copy:focus-visible,.upd .x:focus-visible{outline:2px solid var(--slabInk);outline-offset:2px}\n.upd textarea{width:100%;min-height:140px;margin-top:6px;padding:10px;border:1px solid rgba(16,20,24,.35);border-radius:6px;background:#fffbe6;color:#101418;font:13px/1.4 ui-monospace,Menlo,monospace}\n.upd .msg{margin:2px 0 0;font-weight:700}\n@media(max-width:600px){.upd{grid-template-columns:minmax(0,1fr);grid-template-areas:\"badge\" \"t1\" \"btn\" \"t2\" \"t3\" \"t4\"}.upd .badge,.upd .x{justify-self:start}}\n.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;margin:0 0 10px;gap:2px;flex-wrap:wrap}\n.seg button{min-height:38px;padding:0 14px;border:0;border-radius:999px;background:none;color:var(--ink);font:600 14px Manrope,system-ui,sans-serif;cursor:pointer}\n.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}\n.seg button:focus-visible{outline:2px solid var(--slab);outline-offset:1px}\n.info{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:4px;padding:0;border:1px solid var(--line);border-radius:50%;background:none;color:var(--mute);font:700 12px/1 Manrope,system-ui,sans-serif;cursor:pointer;vertical-align:middle;position:relative}\n.info::after{content:\"\";position:absolute;inset:-11px}\n.info[aria-expanded=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}\n.info:focus-visible{outline:2px solid var(--slab);outline-offset:1px}\n.colnote{margin:14px 0 0;padding:12px 14px;border-left:3px solid var(--slab);background:var(--card);border-radius:4px;font-size:14px;max-width:70ch}\n.colnote b{font-weight:700}\ntr.det td{padding:4px 12px 14px;background:var(--card);text-align:left;white-space:normal}\ntr.det:hover{background:none}\n.dl{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,max-content);gap:4px 28px;margin:0;padding:8px 0 0 calc(32px + 6px);border-left:2px solid var(--line);margin-left:15px;font-size:14px}\n.dl dt{padding-left:12px}.dl dd{margin:0;text-align:right;font-weight:600;white-space:nowrap}\n.dl .sub2{padding-left:32px;color:var(--mute);font-weight:400}.dl dd.sub2{color:var(--mute);font-weight:400}\n.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px}\n.tabs a{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}\n.tabs a[aria-current=page]{background:var(--ink);color:var(--bg);border-color:var(--ink)}\n.tabs a:focus-visible{outline:2px solid var(--slab);outline-offset:2px}\n@media(max-width:760px){.top{grid-template-columns:minmax(0,1fr)}}\n@media(max-width:600px){table{font-size:13px}.mv{grid-template-columns:7em minmax(0,1fr) 6.2em;font-size:14px}}\n@media(prefers-reduced-motion:reduce){.tip{transition:none}}\n";
+  var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  root.innerHTML = "<section class=\"band\"><div class=\"wrap\">\n  <div class=\"upd\" id=\"upd\" role=\"region\" aria-label=\"Update\" hidden>\n    <span class=\"badge\">ONE STEP</span>\n    <div class=\"t1\" id=\"updV\"></div>\n    <button type=\"button\" class=\"x\" id=\"updX\">Hide for now</button>\n    <div class=\"t2\" id=\"updH\"></div>\n    <div class=\"t3\"><button type=\"button\" class=\"copy\" id=\"updCopy\">Copy update message</button>then open a new chat in Claude, paste it and press Enter. It takes a minute, and your history is kept.</div>\n    <div class=\"t4\"><p class=\"msg\" id=\"updMsg\" role=\"status\" hidden></p><textarea id=\"updText\" readonly hidden aria-label=\"Update message\"></textarea></div>\n  </div>\n  <nav class=\"tabs\" id=\"tabs\" aria-label=\"Whose net worth\" hidden></nav>\n  <p class=\"status\" id=\"status\">Loading your log\u2026</p>\n  <h1 id=\"headline\">Your net worth, logged every morning</h1>\n  <p class=\"sub\" id=\"lede\">One snapshot from INDmoney each day at about 8:40 am IST: everything owned minus loans, for each person and the family together.</p>\n  <div class=\"top\">\n    <div class=\"slab\" id=\"slab\">\n      <div><div class=\"lab\" id=\"slabLab\">Net worth</div><div class=\"big\" id=\"nwBig\">\u2014</div></div>\n      <dl class=\"kv\">\n        <dt>Since previous day</dt><dd id=\"dDay\">\u2014</dd>\n        <dt id=\"dStartLab\">Since first log</dt><dd id=\"dStart\">\u2014</dd>\n        <dt id=\"kAssetsLab\">Assets</dt><dd id=\"kAssets\">\u2014</dd>\n        <dt id=\"kAltLab\">Liabilities</dt><dd id=\"kLoan\">\u2014</dd>\n      </dl>\n    </div>\n    <div>\n      <div class=\"seg\" role=\"group\" aria-label=\"What to show\"><button type=\"button\" data-b=\"net\" aria-pressed=\"true\">Net worth</button><button type=\"button\" data-b=\"gross\" aria-pressed=\"false\">Before liabilities</button></div>\n      <div class=\"fig\" id=\"fig\"><svg id=\"chart\" role=\"img\" aria-label=\"Net worth by day\"></svg><div class=\"tip\" id=\"tip\"></div></div>\n      <p class=\"note\" id=\"chartNote\"></p>\n    </div>\n  </div>\n</div></section>\n\n<section class=\"band\" style=\"padding-top:0\"><div class=\"wrap\">\n  <h2 id=\"movesH\">What moved</h2>\n  <p class=\"sub\" id=\"movesSub\" style=\"margin-bottom:0\">Change in each part of your net worth between the first and latest log.</p>\n  <div class=\"moves\" id=\"moves\"></div>\n</div></section>\n\n<section class=\"band\" style=\"padding-top:0\" id=\"banksBand\" hidden><div class=\"wrap\">\n  <h2>Bank accounts</h2>\n  <p class=\"sub\" style=\"margin-bottom:0\" id=\"banksSub\">Savings balance in each account, so you can see which one moved.</p>\n  <div class=\"scroll\"><table><thead id=\"bankHead\"></thead><tbody id=\"bankBody\"></tbody></table></div>\n</div></section>\n\n<section class=\"band\" style=\"padding-top:0\" id=\"liabBand\" hidden><div class=\"wrap\">\n  <h2>Loans and credit cards</h2>\n  <p class=\"sub\" style=\"margin-bottom:0\" id=\"liabSub\">What you owe, item by item.</p>\n  <div class=\"scroll\"><table><thead id=\"liabHead\"></thead><tbody id=\"liabBody\"></tbody></table></div>\n</div></section>\n\n<section class=\"band\" style=\"padding-top:0\"><div class=\"wrap\">\n  <h2>Day by day</h2>\n  <p class=\"sub\" style=\"margin-bottom:0\">Values as INDmoney reported them that morning.</p>\n  <p class=\"colnote\" id=\"colNote\" role=\"status\" hidden></p>\n  <div class=\"scroll\"><table id=\"tbl\"><thead><tr><th>Date</th><th>Net worth<button type=\"button\" class=\"info\" data-k=\"nw\" aria-expanded=\"false\" aria-controls=\"colNote\" aria-label=\"What net worth means\">i</button></th><th>Day change<button type=\"button\" class=\"info\" data-k=\"dc\" aria-expanded=\"false\" aria-controls=\"colNote\" aria-label=\"What day change means\">i</button></th><th>Mutual funds</th><th>Bonds</th><th>Indian stocks</th><th>US stocks<button type=\"button\" class=\"info\" data-k=\"us\" aria-expanded=\"false\" aria-controls=\"colNote\" aria-label=\"What US stocks means\">i</button></th><th>Other assets<button type=\"button\" class=\"info\" data-k=\"oa\" aria-expanded=\"false\" aria-controls=\"colNote\" aria-label=\"What other assets means\">i</button></th><th>Liabilities<button type=\"button\" class=\"info\" data-k=\"ln\" aria-expanded=\"false\" aria-controls=\"colNote\" aria-label=\"What liabilities means\">i</button></th></tr></thead><tbody id=\"tbody\"></tbody></table></div>\n</div></section>\n\n<footer class=\"band\" style=\"padding-top:0\"><div class=\"wrap\"><p class=\"note\">Net worth log v1.3.0 \u00b7 figures from INDmoney \u00b7 a tracking tool, not financial advice</p></div></footer>\n\n";
+  {
+const $ = (id) => document.getElementById(id);
+const PARTS = [
+  ['mf','Mutual funds',1],['bond','Bonds',1],['stock','Indian stocks',1],['us_stock','US stocks',1],
+  ['nps','NPS',1],['sa','Savings',1],['vehicle','Vehicle',1],['other','Other',1],['home_loan','Loans',-1],['credit_card_due','Card dues',-1]
+];
+const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const full = (v) => '₹' + Math.round(v).toLocaleString('en-IN');
+function short(v){
+  const a = Math.abs(v), s = v < 0 ? '−' : '';
+  if (a >= 1e7) return s + '₹' + (a/1e7).toFixed(2) + ' Cr';
+  if (a >= 1e5) return s + '₹' + (a/1e5).toFixed(2) + ' L';
+  if (a >= 1e3) return s + '₹' + (a/1e3).toFixed(1) + 'k';
+  return s + '₹' + Math.round(a);
+}
+const signed = (v) => (v > 0 ? '+' : v < 0 ? '−' : '±') + short(Math.abs(v)).replace('−','');
+const pct = (v, base) => base ? Math.abs((v/base)*100).toFixed(2) + '%' : '';
+const fmtDate = (d, opt) => new Date(d + 'T00:00:00').toLocaleDateString('en-IN', opt || {day:'numeric', month:'short'});
+function setDelta(el, v){ el.textContent = signed(v); }
+
+let rows = [], basis = 'net';
+const val = (r) => basis === 'gross' ? r.assets : r.net_worth;
+
+function draw(){
+  const s = $('chart'), fig = $('fig'), tip = $('tip');
+  const W = s.clientWidth, H = s.clientHeight;
+  if (!W || !H) return;
+  if (!rows.length){ s.innerHTML = ''; return; }
+  const narrow = W < 520;
+  const m = {l: narrow ? 8 : 64, r: 16, t: 18, b: 30};
+  const vals = rows.map(val);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = Math.max((hi - lo) * 0.15, hi * 0.005, 1000);
+  lo -= pad; hi += pad;
+  const n = rows.length;
+  const x = (i) => n === 1 ? m.l + (W - m.l - m.r) / 2 : m.l + i * (W - m.l - m.r) / (n - 1);
+  const y = (v) => m.t + (hi - v) * (H - m.t - m.b) / (hi - lo);
+  let g = '';
+  const ticks = 4;
+  for (let k = 0; k <= ticks; k++){
+    const v = lo + (hi - lo) * k / ticks, yy = y(v).toFixed(1);
+    g += `<line x1="${m.l}" x2="${W - m.r}" y1="${yy}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`;
+    if (!narrow) g += `<text x="${m.l - 10}" y="${yy}" dy="4" text-anchor="end" font-size="12" fill="var(--mute)">${short(v)}</text>`;
+  }
+  const step = Math.max(1, Math.ceil(n / (narrow ? 4 : 8)));
+  rows.forEach((r, i) => {
+    if (i % step === 0 || i === n - 1) g += `<text x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="12" fill="var(--mute)">${fmtDate(r.date)}</text>`;
+  });
+  const path = rows.map((r, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(val(r)).toFixed(1)).join('');
+  if (n > 1) g += `<path d="${path}" fill="none" stroke="var(--plot)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const L = rows[n - 1];
+  g += `<circle cx="${x(n-1).toFixed(1)}" cy="${y(val(L)).toFixed(1)}" r="5" fill="var(--slab)" stroke="var(--plot)" stroke-width="2"/>`;
+  g += `<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--mute)" stroke-dasharray="3 3" opacity="0"/>`;
+  g += `<circle id="xd" r="5" fill="var(--plot)" stroke="var(--bg)" stroke-width="2" opacity="0"/>`;
+  g += `<rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="hit"/>`;
+  s.innerHTML = g;
+  const hit = s.querySelector('#hit'), xh = s.querySelector('#xh'), xd = s.querySelector('#xd');
+  const show = (ev) => {
+    const bx = s.getBoundingClientRect(), px = ev.clientX - bx.left;
+    let i = n === 1 ? 0 : Math.round((px - m.l) / ((W - m.l - m.r) / (n - 1)));
+    i = Math.max(0, Math.min(n - 1, i));
+    const r = rows[i], cx = x(i), cy = y(val(r));
+    xh.setAttribute('x1', cx); xh.setAttribute('x2', cx); xh.setAttribute('opacity', 1);
+    xd.setAttribute('cx', cx); xd.setAttribute('cy', cy); xd.setAttribute('opacity', 1);
+    tip.innerHTML = '';
+    const d = document.createElement('span'); d.textContent = fmtDate(r.date, {weekday:'short', day:'numeric', month:'short'});
+    const b = document.createElement('b'); b.textContent = full(val(r)) + (basis === 'gross' ? ' assets' : '');
+    tip.append(d, b);
+    if (i > 0){ const c = document.createElement('span'); c.textContent = signed(val(r) - val(rows[i-1])) + ' vs previous day'; tip.append(c); }
+    tip.style.left = Math.max(80, Math.min(W - 80, cx)) + 'px'; tip.style.top = cy + 'px'; tip.style.opacity = 1;
+  };
+  const hide = () => { xh.setAttribute('opacity', 0); xd.setAttribute('opacity', 0); tip.style.opacity = 0; };
+  hit.addEventListener('pointermove', show); hit.addEventListener('pointerdown', show); hit.addEventListener('pointerleave', hide);
+}
+const ro = new ResizeObserver(draw); ro.observe($('chart'));
+
+function render(){
+  const n = rows.length;
+  if (!n){
+    $('status').textContent = 'No days logged yet. The first snapshot arrives with the next morning run.';
+    $('moves').innerHTML = '<div class="empty">Changes appear once two days are logged.</div>';
+    $('tbody').innerHTML = '';
+    draw(); return;
+  }
+  const L = rows[n - 1], F = rows[0], P = n > 1 ? rows[n - 2] : null;
+  const have = new Set(rows.map(r => r.date)), gaps = [];
+  for (let t = new Date(F.date + 'T00:00:00Z'); t <= new Date(L.date + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1)){
+    const d = t.toISOString().slice(0, 10); if (!have.has(d)) gaps.push(d);
+  }
+  const todayIST = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+  const nowH = new Date(Date.now() + 5.5 * 3600e3).getUTCHours() + new Date(Date.now() + 5.5 * 3600e3).getUTCMinutes() / 60;
+  const lateToday = L.date < todayIST && nowH >= 9.25;
+  let st = `${n} ${n === 1 ? 'day' : 'days'} logged · latest ${fmtDate(L.date, {weekday:'short', day:'numeric', month:'short', year:'numeric'})}`;
+  if (lateToday) st += ' · ⚠ today not logged yet: check INDmoney sign-in';
+  if (gaps.length) st += ` · ⚠ missing ${gaps.length} ${gaps.length === 1 ? 'day' : 'days'}: ${gaps.slice(-5).map(d => fmtDate(d)).join(', ')}`;
+  $('status').textContent = st;
+  $('status').style.color = (lateToday || gaps.length) ? 'var(--down)' : '';
+  const g = basis === 'gross';
+  $('nwBig').textContent = short(val(L));
+  $('slabLab').textContent = (g ? 'Assets before liabilities on ' : 'Net worth on ') + fmtDate(L.date, {day:'numeric', month:'short'});
+  $('kAssetsLab').textContent = g ? 'Liabilities' : 'Assets';
+  $('kAssets').textContent = short(g ? L.liabilities : L.assets);
+  $('kAltLab').textContent = g ? 'Net worth' : 'Liabilities';
+  $('kLoan').textContent = short(g ? L.net_worth : L.liabilities);
+  $('chart').setAttribute('aria-label', g ? 'Assets before liabilities by day' : 'Net worth by day');
+  $('dStartLab').textContent = 'Since ' + fmtDate(F.date);
+  if (P){ setDelta($('dDay'), val(L) - val(P)); } else $('dDay').textContent = 'first day';
+  if (n > 1){
+    const ch = L.net_worth - F.net_worth;
+    setDelta($('dStart'), val(L) - val(F));
+    $('headline').textContent = `${VIEWS[view]} ${ch >= 0 ? 'up' : 'down'} ${short(Math.abs(ch)).replace('−','')} since ${fmtDate(F.date)}`;
+    $('lede').textContent = `${short(L.net_worth)} now, ${pct(ch, F.net_worth)} ${ch >= 0 ? 'higher' : 'lower'} than ${n - 1} ${n === 2 ? 'day' : 'days'} ago. Logged each morning from INDmoney: everything owned minus loans.`;
+    $('chartNote').textContent = 'Point at the line to see any day.';
+  } else {
+    $('dStart').textContent = '—';
+    $('headline').textContent = `${VIEWS[view]} ${short(L.net_worth)} on ${fmtDate(L.date)}`;
+    $('chartNote').textContent = 'The trend line starts once the second morning is logged.';
+  }
+  // What moved
+  if (n > 1){
+    const mv = PARTS.map(([k, name, sign]) => ({name, d: sign * (num(L[k]) - num(F[k]))})).filter(o => Math.abs(o.d) >= 1).sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+    const max = Math.max(1, ...mv.map(o => Math.abs(o.d)));
+    $('movesSub').textContent = `Effect of each part on your net worth, ${fmtDate(F.date)} to ${fmtDate(L.date)}. Smaller loans or card dues count as a gain.`;
+    $('moves').innerHTML = mv.length ? mv.map(o => {
+      const w = (Math.abs(o.d) / max * 50).toFixed(2), left = o.d >= 0 ? 50 : 50 - w;
+      return `<div class="mv"><span>${o.name}</span><span class="track"><span class="axis"></span><span class="bar" style="left:${left}%;width:${w}%;background:var(${o.d >= 0 ? '--up' : '--down'})"></span></span><span class="val ${o.d >= 0 ? 'up' : 'down'}">${signed(o.d)}</span></div>`;
+    }).join('') : '<div class="empty">Nothing changed between these days.</div>';
+  } else {
+    $('moves').innerHTML = '<div class="empty">Changes appear once two days are logged.</div>';
+  }
+  // Ledger, newest first, with expandable "Other assets"
+  $('tbody').innerHTML = rows.slice().reverse().map((r, j) => {
+    const i = n - 1 - j, prev = i > 0 ? rows[i - 1] : null, dc = prev ? r.net_worth - prev.net_worth : null;
+    const other = num(r.nps) + num(r.sa) + num(r.vehicle) + num(r.other);
+    const open = openDays.has(r.date);
+    const main = `<tr><td>${fmtDate(r.date, {weekday:'short', day:'numeric', month:'short'})}</td><td><b>${full(r.net_worth)}</b></td><td class="${dc == null ? '' : dc >= 0 ? 'up' : 'down'}">${dc == null ? '—' : signed(dc)}</td><td>${short(num(r.mf))}</td><td>${short(num(r.bond))}</td><td>${short(num(r.stock))}</td><td>${short(num(r.us_stock))}</td><td><button type="button" class="exp" data-d="${r.date}" aria-expanded="${open}" aria-label="${open ? 'Hide' : 'Show'} what other assets include on ${fmtDate(r.date)}">${open ? '−' : '+'}</button>${short(other)}</td><td>${short(num(r.liabilities))}</td></tr>`;
+    return open ? main + `<tr class="det"><td colspan="9">${detail(r)}</td></tr>` : main;
+  }).join('');
+  renderBanks();
+  renderLiab();
+  draw();
+}
+const openDays = new Set();
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function detail(r){
+  const fam = view === 'family';
+  let h = '';
+  const line = (label, v, cls) => { h += `<dt class="${cls || ''}">${label}</dt><dd class="${cls || ''}">${full(v)}</dd>`; };
+  line('Savings accounts', num(r.sa));
+  if (r.accts && r.accts.length) r.accts.slice().sort((a, b) => b.bal - a.bal).forEach(a => line('↳ ' + esc(a.name) + (fam && a.who ? ' · ' + esc(a.who) : ''), a.bal, 'sub2'));
+  if (num(r.nps)) line('NPS', num(r.nps));
+  if (num(r.vehicle)) line('Vehicle', num(r.vehicle));
+  if (num(r.other)) line('Other (wallets, crypto, FD, EPF, PPF, gold…)', num(r.other));
+  return `<dl class="dl">${h}</dl>`;
+}
+const NOTES = {
+  nw: ['Net worth', 'Everything owned (funds, stocks, bonds, savings, NPS, vehicle and more) minus loans and card dues, as INDmoney reported it that morning.'],
+  dc: ['Day change', 'Difference from the previous logged day. It includes market moves and money you added, spent or moved, so a drop isn’t always a loss.'],
+  us: ['US stocks', 'Shown in rupees at that day’s exchange rate, so a rupee move changes this even when the shares don’t.'],
+  oa: ['Other assets', 'Savings accounts, NPS, vehicle, and small balances such as wallets, FD, EPF, PPF or gold. Click + on any day to see the amounts.'],
+  ln: ['Liabilities', 'Everything owed: loan balances plus credit card dues. Each one is listed under Loans and credit cards. Paying them down raises net worth.']
+};
+let noteKey = '';
+document.querySelector('#tbl thead').addEventListener('click', (e) => {
+  const b = e.target.closest('button.info'); if (!b || !NOTES[b.dataset.k]) return;
+  noteKey = noteKey === b.dataset.k ? '' : b.dataset.k;
+  const box = $('colNote');
+  document.querySelectorAll('#tbl .info').forEach(x => x.setAttribute('aria-expanded', String(x.dataset.k === noteKey)));
+  if (!noteKey){ box.hidden = true; return; }
+  box.textContent = '';
+  const t = document.createElement('b'); t.textContent = NOTES[noteKey][0] + ': ';
+  box.append(t, NOTES[noteKey][1]); box.hidden = false;
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && noteKey){ const k = noteKey; noteKey = ''; $('colNote').hidden = true; document.querySelectorAll('#tbl .info').forEach(x => x.setAttribute('aria-expanded', 'false')); const b = document.querySelector(`#tbl .info[data-k="${k}"]`); if (b) b.focus(); } });
+$('tbody').addEventListener('click', (e) => {
+  const b = e.target.closest('button.exp'); if (!b) return;
+  const d = b.dataset.d; if (!DATE_RE.test(d)) return;
+  openDays.has(d) ? openDays.delete(d) : openDays.add(d);
+  render();
+  const again = $('tbody').querySelector(`button.exp[data-d="${d}"]`); if (again) again.focus();
+});
+function renderLiab(){
+  const withL = rows.filter(r => r.loans || r.cards);
+  const band = $('liabBand');
+  if (!withL.length){ band.hidden = true; return; }
+  band.hidden = false;
+  const L = withL[withL.length - 1], P = withL.length > 1 ? withL[withL.length - 2] : null;
+  const fam = view === 'family';
+  const items = (r) => (r ? (r.loans || []).concat(r.cards || []) : []);
+  const key = (a) => (a.who || '') + '|' + a.type + '|' + a.name;
+  const pm = new Map(items(P).map(a => [key(a), a.bal]));
+  const head = $('liabHead'); head.textContent = '';
+  const hr = document.createElement('tr');
+  ['Lender or card'].concat(fam ? ['Whose'] : [], ['Type', 'Owed ' + fmtDate(L.date), P ? 'Since ' + fmtDate(P.date) : 'Since previous log'])
+    .forEach(t => { const th = document.createElement('th'); th.textContent = t; hr.append(th); });
+  head.append(hr);
+  const body = $('liabBody'); body.textContent = '';
+  const cell = (tr, text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.append(td); };
+  const list = items(L).sort((a, b) => b.bal - a.bal);
+  list.forEach(a => {
+    const tr = document.createElement('tr');
+    cell(tr, a.name); if (fam) cell(tr, a.who || ''); cell(tr, a.type); cell(tr, full(a.bal));
+    const d = pm.has(key(a)) ? a.bal - pm.get(key(a)) : null;
+    cell(tr, d == null ? '—' : signed(d), d == null || Math.abs(d) < 1 ? '' : d < 0 ? 'up' : 'down');
+    body.append(tr);
+  });
+  const tr = document.createElement('tr'); cell(tr, 'Total owed'); if (fam) cell(tr, ''); cell(tr, ''); cell(tr, full(L.liabilities)); cell(tr, P ? signed(L.liabilities - P.liabilities) : '—');
+  tr.style.fontWeight = '700'; body.append(tr);
+  $('liabSub').textContent = list.length ? 'What is owed, item by item. A fall in what is owed shows in green.' : 'No loans or card dues reported.';
+}
+document.querySelector('.seg').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-b]'); if (!b) return;
+  basis = b.dataset.b === 'gross' ? 'gross' : 'net';
+  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.b === basis)));
+  if (rows.length) render();
+});
+function renderBanks(){
+  const withA = rows.filter(r => r.accts && r.accts.length);
+  const band = $('banksBand');
+  if (!withA.length){ band.hidden = true; return; }
+  band.hidden = false;
+  const L = withA[withA.length - 1], P = withA.length > 1 ? withA[withA.length - 2] : null, F = withA[0];
+  const fam = view === 'family';
+  const key = (a) => (a.who || '') + '|' + a.name;
+  const mapOf = (r) => { const m = new Map(); (r ? r.accts : []).forEach(a => m.set(key(a), a.bal)); return m; };
+  const pm = mapOf(P), fm = mapOf(F);
+  const head = $('bankHead'); head.textContent = '';
+  const hr = document.createElement('tr');
+  [fam ? 'Account' : 'Account'].concat(fam ? ['Whose'] : [], ['Balance ' + fmtDate(L.date), P ? 'Since ' + fmtDate(P.date) : 'Since previous log', withA.length > 2 ? 'Since ' + fmtDate(F.date) : null]).filter(Boolean)
+    .forEach(t => { const th = document.createElement('th'); th.textContent = t; hr.append(th); });
+  head.append(hr);
+  const body = $('bankBody'); body.textContent = '';
+  const cell = (tr, text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.append(td); };
+  const delta = (tr, v) => cell(tr, v == null ? '—' : signed(v), v == null || Math.abs(v) < 1 ? '' : v > 0 ? 'up' : 'down');
+  const list = L.accts.slice().sort((a, b) => b.bal - a.bal);
+  list.forEach(a => {
+    const tr = document.createElement('tr');
+    cell(tr, a.name); if (fam) cell(tr, a.who || '');
+    cell(tr, full(a.bal));
+    delta(tr, pm.has(key(a)) ? a.bal - pm.get(key(a)) : null);
+    if (withA.length > 2) delta(tr, fm.has(key(a)) ? a.bal - fm.get(key(a)) : null);
+    body.append(tr);
+  });
+  $('banksSub').textContent = withA.length > 1 ? 'Savings balance in each account and how it changed, so you can see which one moved.' : 'Savings balance in each account. Changes appear from the next morning\'s log.';
+}
+
+const APP_VERSION = '1.3.0', TASK_VERSION = '1.3.0';
+const WHATS_NEW = 'Your dashboard now updates itself, and the morning task saves everything INDmoney reports, so future features need no steps from you.';
+const TASK_TEMPLATE = "Log today's net worth snapshots from INDmoney into the user's \"Net worth log\" dashboard. This is an unattended daily run; do not ask questions. (Task version 1.3.0)\n\nMEMBERS (family_member argument -> document path):\n{{MEMBERS}}\n\n1. Load the tools with ToolSearch: the INDmoney tools networth_snapshot and networth_holdings, the artifact database tools db_get and db_write, and WebFetch. If the INDmoney tools are missing, or a call fails because INDmoney needs signing in again, write nothing and finish with exactly: \"ACTION NEEDED: INDmoney needs you to sign in again (claude.ai connector settings). Today's net worth wasn't logged.\" Then stop.\n\n2. For each member: call networth_snapshot, then networth_holdings with asset_type = \"SA\" (same family_member argument; none for the user). RETRIES: if a call fails for any reason other than sign-in (timeout, server error, empty or malformed result, total_networth missing), wait 60 seconds (run `sleep 60` in Bash) and try again, up to 3 attempts in all. If only networth_holdings keeps failing, still log that member without sa_accounts and raw.sa. If a family member's snapshot still fails, or they no longer share their portfolio, still log the others and say so in the summary. If the user's own snapshot fails after 3 attempts, say so in the summary starting with \"ACTION NEEDED:\".\n\n3. From each successful snapshot, build one document (INR as returned; never estimate or invent a value):\n   - date: today's date in Asia/Kolkata time, \"YYYY-MM-DD\"\n   - captured_at: now, ISO 8601 with +05:30\n   - source: \"INDmoney networth_snapshot\"\n   - net_worth: total_networth\n   - assets: total_current_value\n   - invested: total_invested\n   - liabilities: liabilities.total\n   - home_loan: liabilities.total_loan_balance\n   - credit_card_due: liabilities.total_credit_card_due\n   - loans: liabilities.loans as [{\"lender\", \"type\": loan_type, \"balance\": current_balance}], [] if none\n   - cards: liabilities.credit_cards as [{\"name\": name exactly as returned (masked), \"due\": total_due}], [] if none\n   - mf, bond, stock, us_stock, nps, sa, vehicle: current_value of the investments rows with asset_type MF, BOND, STOCK, US_STOCK, NPS, SA, VEHICLE (0 if missing)\n   - other: sum of current_value of every other asset_type, 0 if none\n   - sa_accounts: from networth_holdings SA, [{\"name\": investment, \"balance\": market_value}]; if a bank name repeats, name the later ones \"<bank> (2)\", \"<bank> (3)\"\n   - raw: {\"snapshot\": the investments, assets, market_cap and liabilities parts of the networth_snapshot result exactly as returned, \"sa\": the holdings list from networth_holdings exactly as returned}. This keeps everything INDmoney reported so future dashboard features can use it. Never add card numbers, account numbers or anything not in those results.\n\n4. Dashboard slug: {{SLUG}}. For each path, db_get first. If it does not exist, db_write one op {op:\"set\", path, data}. If it exists, db_write {op:\"set\", path, data, ifVersion: <its version>} so that day's row is replaced, never duplicated. One db_write at a time. If a db_write fails with a transient error, wait 10 seconds and retry once (re-read the version first). Then db_get each path to confirm it saved with today's date. If a document would be over 200 KB, drop raw from it and say so in the summary. Write nothing else in the database.\n\n5. Usage count (anonymous, never let it affect logging): WebFetch https://nagarajanseshadri.com/networth-log/version.json?v=1.3.0 once and ignore the result. If it fails, skip it silently. Send nothing else.\n\n6. Finish with a one-line summary starting \"Logged:\", with the family total (sum of all members) in lakhs and each person's figure, e.g. \"Logged: Family ₹68.22 L (Asha ₹60.66 L, Ravi ₹7.55 L)\". If any bank account changed by more than ₹10,000 since the previous logged day (compare with that day's sa_accounts, if you read it), add a short note naming it and the change. If any credit card due is above ₹0, add a short note with the card and amount. Link: {{URL}}\n";
+const newer = (a, b) => { const p = (v) => String(v).split('.').map(n => parseInt(n, 10) || 0); const x = p(a), y = p(b); for (let i = 0; i < 3; i++){ if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+const clip = (v, n) => String(v == null ? '' : v).replace(/[\r\n"]+/g, ' ').slice(0, n);
+function updateMessage(cfg){
+  const mem = (Array.isArray(cfg.members) ? cfg.members : []).filter(m => m && m.collection).map(m => (m.id === 'me' || !m.indmoney_name)
+    ? `- the user (${clip(m.label, 40)}): no family_member -> "${clip(m.collection, 60)}/<date>"`
+    : `- ${clip(m.label, 40)}: family_member = "${clip(m.indmoney_name, 80)}" -> "${clip(m.collection, 60)}/<date>"`).join('\n');
+  const slug = /^[0-9a-f-]{36}$/i.test(String(cfg.artifact_slug || '')) ? cfg.artifact_slug : '';
+  const url = /^https:\/\/claude\.ai\/artifact\/[A-Za-z0-9]+$/.test(String(cfg.artifact_url || '')) ? cfg.artifact_url : '';
+  const task = clip(cfg.task_name || 'Daily net worth log', 80);
+  const body = TASK_TEMPLATE.replace('{{MEMBERS}}', mem).replace('{{SLUG}}', slug || '(the slug of my artifact titled "Net worth log")').replace('{{URL}}', url || 'my "Net worth log" dashboard');
+  return `Please update my INDmoney net worth log's morning task to version ${TASK_VERSION}.
+
+1. Find my scheduled task named "${task}"${slug ? ` (its prompt mentions ${slug})` : ''}.
+2. Replace only its prompt with the text between the two marker lines below. Keep its schedule, name, notification and approval settings.
+3. In my "Net worth log" dashboard${slug ? ` (artifact ${slug})` : ''}, update the config/setup document: set "task_version" to "${TASK_VERSION}" (merge, keep everything else).
+4. Tell me in one line when it's done.
+
+----- new task prompt -----
+${body}
+----- end of new task prompt -----`;
+}
+function checkTask(cfg){
+  const box = $('upd');
+  const have = cfg && typeof cfg.task_version === 'string' ? cfg.task_version : '1.0.0';
+  if (!cfg || !newer(TASK_VERSION, have)){ box.hidden = true; return; }
+  let hid = ''; try { hid = localStorage.getItem('nwlog-hide-task') || ''; } catch (e) {}
+  if (hid === TASK_VERSION){ box.hidden = true; return; }
+  $('updV').textContent = 'Your dashboard is on version ' + APP_VERSION + '. One quick step finishes the update.';
+  const h = $('updH'); h.textContent = ''; const b = document.createElement('b'); b.textContent = 'What’s new: '; h.append(b, WHATS_NEW);
+  const msg = updateMessage(cfg);
+  $('updCopy').onclick = async () => {
+    const note = $('updMsg'), ta = $('updText');
+    try { await navigator.clipboard.writeText(msg); note.textContent = 'Copied. Now open a new chat in Claude, paste it (⌘V or Ctrl+V) and press Enter.'; note.hidden = false; ta.hidden = true; }
+    catch (e) { ta.value = msg; ta.hidden = false; ta.focus(); ta.select(); note.textContent = 'Copying isn’t allowed here. The message is selected below: copy it (⌘C or Ctrl+C), then paste it into a new Claude chat.'; note.hidden = false; }
+  };
+  $('updX').onclick = () => { try { localStorage.setItem('nwlog-hide-task', TASK_VERSION); } catch (e) {} box.hidden = true; };
+  box.hidden = false;
+}
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/, ID_RE = /^[a-z0-9-]{1,40}$/, COL_RE = /^[A-Za-z0-9_-]{1,60}$/;
+const FIELDS = ['net_worth','assets','liabilities','invested','home_loan','credit_card_due','mf','bond','stock','us_stock','nps','sa','vehicle','other'];
+let members = [], VIEWS = {}, view = '', store = {}, loaded = {}, subs = [];
+function clean(list){
+  return list.filter(r => typeof r.date === 'string' && DATE_RE.test(r.date) && Number.isFinite(Number(r.net_worth)))
+    .map(r => { const o = {date: r.date}; FIELDS.forEach(f => { o[f] = num(r[f]); });
+      const lst = (arr, f) => Array.isArray(arr) ? arr.slice(0, 30).map(f).filter(Boolean) : null;
+      o.loans = lst(r.loans, a => a && typeof a.lender === 'string' && Number.isFinite(Number(a.balance)) ? {name: a.lender.slice(0, 60), type: typeof a.type === 'string' ? a.type.slice(0, 40) : 'Loan', bal: Number(a.balance)} : null);
+      o.cards = lst(r.cards, a => a && typeof a.name === 'string' && Number.isFinite(Number(a.due)) ? {name: a.name.slice(0, 60), type: 'Credit card', bal: Number(a.due)} : null);
+      if (Array.isArray(r.sa_accounts)) o.accts = r.sa_accounts.filter(a => a && typeof a.name === 'string' && Number.isFinite(Number(a.balance))).slice(0, 30).map(a => ({name: a.name.slice(0, 60), bal: Number(a.balance)}));
+      return o; });
+}
+function familyRows(){
+  if (!members.length) return [];
+  const maps = members.map(m => new Map(store[m.id].map(r => [r.date, r])));
+  return store[members[0].id].filter(r => maps.every(mp => mp.has(r.date))).map(r => {
+    const o = {date: r.date}; FIELDS.forEach(f => { o[f] = maps.reduce((s, mp) => s + mp.get(r.date)[f], 0); });
+    const all = maps.map((mp, k) => mp.get(r.date).accts ? mp.get(r.date).accts.map(a => ({name: a.name, bal: a.bal, who: members[k].label})) : null);
+    if (all.some(Boolean)) o.accts = [].concat(...all.filter(Boolean));
+    ['loans', 'cards'].forEach(f => {
+      const parts = maps.map((mp, k) => mp.get(r.date)[f] ? mp.get(r.date)[f].map(a => Object.assign({}, a, {who: members[k].label})) : null);
+      if (parts.some(Boolean)) o[f] = [].concat(...parts.filter(Boolean));
+    });
+    return o;
+  });
+}
+function buildTabs(){
+  const nav = $('tabs'); nav.textContent = '';
+  VIEWS = {};
+  const list = members.length > 1 ? [{id: 'family', label: 'Family'}].concat(members) : members;
+  list.forEach(m => {
+    VIEWS[m.id] = m.id === 'family' ? 'Family net worth' : (members.length > 1 ? m.label + "'s net worth" : 'Net worth');
+    const a = document.createElement('a'); a.href = '#' + m.id; a.dataset.v = m.id; a.textContent = m.label; nav.append(a);
+  });
+  nav.hidden = list.length < 2;
+}
+function pick(){
+  if (!members.length) return;
+  const h = location.hash.slice(1), first = members.length > 1 ? 'family' : members[0].id;
+  view = VIEWS[h] ? h : first;
+  document.querySelectorAll('#tabs a').forEach(a => a.setAttribute('aria-current', a.dataset.v === view ? 'page' : 'false'));
+  if (!members.every(m => loaded[m.id])) return;
+  rows = view === 'family' ? familyRows() : store[view];
+  render();
+}
+window.addEventListener('hashchange', pick);
+(async () => {
+  const db = await claude.use('db');
+  if (!db){ $('status').textContent = 'Sign in to claude.ai to see your log.'; return; }
+  const timer = setTimeout(() => { $('status').textContent = "Your log can't be reached right now. It will appear when the connection returns."; }, 10000);
+  const fail = () => { clearTimeout(timer); $('status').textContent = "Your log couldn't be loaded."; };
+  db.doc('config/setup').onSnapshot((snap) => {
+    if (!snap.metadata.fromCache) clearTimeout(timer);
+    const cfg = snap.exists ? snap.data() : null;
+    checkTask(cfg);
+    const next = (cfg && Array.isArray(cfg.members) ? cfg.members : [])
+      .filter(m => m && ID_RE.test(String(m.id)) && m.id !== 'family' && COL_RE.test(String(m.collection)) && typeof m.label === 'string')
+      .slice(0, 8).map(m => ({id: m.id, label: m.label.slice(0, 40), collection: m.collection}));
+    if (!next.length){ $('status').textContent = 'Setup not finished yet: ask Claude to run the INDmoney net worth log skill.'; return; }
+    if (JSON.stringify(next) === JSON.stringify(members)) return;
+    subs.forEach(u => u()); subs = [];
+    members = next; store = {}; loaded = {};
+    members.forEach(m => { store[m.id] = []; loaded[m.id] = false; });
+    buildTabs();
+    members.forEach(m => subs.push(db.collection(m.collection).orderBy('date').onSnapshot((s) => {
+      store[m.id] = clean(s.docs.map(d => d.data() || {})); loaded[m.id] = true; pick();
+    }, fail)));
+    pick();
+  }, fail);
+})();
+  }
+})();

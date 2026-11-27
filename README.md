@@ -1,69 +1,78 @@
-# INDmoney Net Worth Log: a Claude skill
+# INDmoney Net Worth Log for Claude
 
-**Free · unofficial · read-only · not financial advice**
+A free Claude skill that keeps a **daily history of your net worth** from INDmoney, for you and any family members who share their portfolio with you, and charts how it moves.
 
-INDmoney shows your net worth as it is *right now*, but it keeps no day-by-day history. This Claude skill builds that history for you. Every morning it takes one snapshot from your INDmoney account, for you and for any family members who share their portfolio with you, and saves it to a private dashboard in your own Claude account.
+INDmoney shows your net worth for today. This skill records it every morning, so after a few days you can see the trend, what moved it (mutual funds, stocks, bonds, loans…), and where to improve.
+
+Made by [Nagarajan Seshadri](https://nagarajanseshadri.com). Install and update guide: [nagarajanseshadri.com/networth-log](https://nagarajanseshadri.com/networth-log/).
 
 ## What you get
 
-- **A private dashboard** with Family and per-person tabs, net worth on the latest day, change since the previous day and since the first log, assets and home loan.
-- **A trend chart** of net worth over the days, with a tooltip for any day.
-- **What moved**: which part of your net worth (mutual funds, bonds, Indian stocks, US stocks, NPS, savings, vehicle, other, home loan) changed the most.
-- **A day-by-day ledger** of values as INDmoney reported them each morning.
-- **Missed-day warnings**: the status line turns red if a morning wasn't logged, for example because your INDmoney sign-in expired.
-- **A daily scheduled task** that runs in the cloud at 8:40 am IST, so your computer and phone can be off.
-
-Why 8:40 am? It's before the 9:00 pre-open, so each entry is a clean end-of-day picture: Indian stocks at the previous close, mutual fund NAVs from the previous evening, and US stocks after their overnight close. Each entry describes the **previous trading day**.
+- **A private dashboard** in your Claude account with:
+  - a Family tab (everyone added together) and a tab per person
+  - today's net worth, the change since the previous day and since the first log
+  - a trend chart (point at any day to see its value)
+  - **What moved:** how much each part (mutual funds, stocks, US stocks, bonds, savings, loans) added or took away
+  - net worth with or without liabilities (one click to switch)
+  - each loan and credit card listed separately
+  - each bank account's balance and change, so you can see which one moved
+  - a day-by-day table
+  - a red warning if a day was missed
+- **A daily scheduled task** that runs at 8:40 am IST in Anthropic's cloud. Your laptop and phone can be off. It retries temporary errors and tells you clearly when INDmoney needs you to sign in again.
 
 ## What you need
 
-- A Claude account with **Skills** and **code execution** turned on
-- The **official INDmoney connector** for Claude: `https://mcp.indmoney.com/mcp` (setup guide: [indmoney.com/mcp](https://www.indmoney.com/mcp))
-- Claude features that let a dashboard keep its own data, and **scheduled tasks**. Availability can depend on your plan. If scheduled tasks aren't available, the skill still builds the dashboard and logs today, and tells you the daily run can't be scheduled.
+- A Claude plan that supports skills, artifacts and scheduled tasks
+- The **INDmoney connector** connected in Claude
+- To include family members: their portfolios shared with you in INDmoney's family feature
 
 ## Install
 
-1. Download `indmoney-networth-log.zip` from the [latest release](../../releases/latest).
-2. In Claude, go to **Customize → Skills**, click **+**, then **Create skill → Upload a skill**, and choose the zip.
-3. Connect INDmoney: **Settings → Connectors → Add custom connector**, paste `https://mcp.indmoney.com/mcp`, and sign in on INDmoney's own page.
-4. In a new chat, say: **"Set up my INDmoney net worth log."**
+1. Download **indmoney-networth-log.zip**.
+2. In Claude, open **Customize → Skills**, click **+**, choose **Upload a skill**, and select the zip.
+3. Turn the skill on, then start a chat with: *"Set up my INDmoney net worth log."*
 
-Claude will ask which family members to include, publish your private dashboard, log today, and schedule the morning run.
+Claude will check your connection, ask which family members to include, build the dashboard, log today and schedule the morning run.
 
-To try it before committing to a daily run, say: *"Set up my INDmoney net worth log. This is a test: schedule the run once, 10 minutes from now, instead of daily."*
+**Claude Code users** can add this repository as a plugin marketplace and install `indmoney-networth-log` from it.
 
-## Privacy
+## Updating
 
-- Everything is created **in your own Claude account**, under **your own INDmoney sign-in**. Nothing is sent anywhere else.
-- The INDmoney connector is **read-only**: no trades, no transfers, no changes to your account.
-- The dashboard is **private to you** by default. Only you, the owner, can write to it, and the page itself never writes.
+**Most updates need nothing from you.** Your dashboard loads its code from this project's published package, so improvements appear the next time you open it.
 
-## Things to know
+**On the rare occasion the morning task needs a change**, your dashboard shows a yellow banner with a **Copy update message** button. Click it, open a new chat in Claude, paste and press Enter. Claude updates your task in a minute; your history is kept. No downloads.
 
-- **Missed days can't be filled in later.** INDmoney has no history, so if a morning's run fails (most often because the INDmoney sign-in expired), that day is lost. The run's summary starts with **ACTION NEEDED** when that happens. To hear about it the same day, turn on notifications for the task in its scheduled-task settings.
-- **The trend line starts on day two.**
-- **Changing it later**: ask Claude to add or remove a family member, or change the time. Removing someone keeps their past rows.
+Using a version before 1.3? Do one last manual update: install the new zip (Plugins → Add → Upload plugin), then say *"Update my INDmoney net worth log."* After that, updates come to you.
 
-## What's in this repo
+## What's new
 
-```
-indmoney-networth-log/
-├── SKILL.md                         # instructions Claude follows to set everything up
-├── assets/dashboard.html            # the private dashboard page
-└── references/daily-task-prompt.md  # template for the daily scheduled task
-```
+- **1.3.0**
+  - The dashboard updates itself
+  - The morning task saves everything INDmoney reports, so new features can use days already logged
+  - Rare task changes: one click to copy, one paste into Claude
+  - Anonymous daily usage count (see below)
+- **1.2.0**: loans and cards listed one by one; net worth with or without liabilities; bank-by-bank balances; **+** and ⓘ details in the table; big-move and card-due notes in the morning summary; update mode
+- **1.0.0**: first release
+
+## Good to know
+
+- **Entries describe the previous trading day.** The run happens before the 9:00 am pre-open, so stocks show the previous close and mutual funds the previous evening's NAV.
+- **A missed day can't be filled in later.** INDmoney's connector only gives today's figures. If your INDmoney sign-in expires, sign in again the same day.
+- **Turn on notifications** for the task (in its scheduled-task settings) so you hear about a failed day. Phone alerts need the Claude mobile app; email works without it.
+- **Your data stays yours.** Everything is created in your own Claude account under your own INDmoney sign-in. Your figures are never sent to the author or anyone else. The dashboard is private unless you share it.
+- **Anonymous usage count.** Each morning your task reads one public file on nagarajanseshadri.com, and that read is counted (per day and version only: no names, no figures, no IP addresses) so the author knows how many people use it.
+- **The dashboard runs code from this project.** Its page loads the published package (`indmoney-networth-log@1` on npm, via jsDelivr). Dashboard pages can't send data to other sites.
 
 ## Disclaimer
 
-This is an independent, unofficial project. It is not affiliated with, endorsed by, or supported by INDmoney or Anthropic. It is a tracking tool, not financial advice. Figures are shown as INDmoney reports them and may differ from your statements.
+This is an independent, free tool. It is **not affiliated with, endorsed by or supported by INDmoney or Anthropic**. It only records figures INDmoney reports and is **not financial advice**. Figures can be wrong if INDmoney's data is wrong; check important numbers in the INDmoney app. Provided as is, without warranty (see LICENSE).
 
-## Author
+## For maintainers
 
-**Nagarajan Seshadri**, an ecommerce technology consultant in Chennai
-[nagarajanseshadri.com](https://nagarajanseshadri.com) · [LinkedIn](https://www.linkedin.com/in/nagarajanseshadri/)
-
-Issues and suggestions are welcome. Open an issue in this repo.
+- `skills/indmoney-networth-log/`: the skill (SKILL.md, `references/daily-task-prompt.md`, `assets/dashboard.html` source, `assets/shell.html` page)
+- `dashboard-package/`: the npm package each dashboard loads. Release: `python3 build.py`, bump `dashboard-package/package.json`, `npm publish` from that folder
+- When the task prompt changes, bump `TASK_VERSION` in `dashboard.html` and the version in `daily-task-prompt.md`; dashboards then show the Copy update message banner
 
 ## License
 
-[MIT](LICENSE)
+MIT
