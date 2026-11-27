@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Net worth log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a calm personal ledger, newspaper graphics-desk clarity, no props.
+   IDEA: a daily bank passbook: one line per morning, the balance carried forward.
+   PICTURE: the net worth line across the days, latest point marked, crosshair tooltip.
+   COLOUR and TYPE: white, ink #101418, one warm yellow slab behind the key figure; Manrope.
+   LAYOUT: key figure + chart in first screen, then what moved, then the daily ledger. */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#101418);--ink:light-dark(#101418,#eef1f4);--mute:light-dark(#5b6670,#9aa6b1);--line:light-dark(#e3e7eb,#283039);--slab:#ffd84a;--slabInk:#101418;--up:light-dark(#127a52,#4cc38a);--down:light-dark(#b4410f,#f08a5d);--plot:light-dark(#101418,#eef1f4);--card:light-dark(#f6f7f9,#171c22)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Manrope,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(24px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+h1{font-size:clamp(28px,4.2vw,46px);line-height:1.05;font-weight:800;margin:0 0 10px;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:22px;line-height:1.2;margin:0 0 6px;font-weight:700}
+.sub{color:var(--mute);margin:0 0 22px;max-width:70ch}
+.top{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:clamp(16px,3vw,40px);align-items:stretch}
+.slab{background:var(--slab);color:var(--slabInk);border-radius:6px;padding:22px 22px 20px;display:flex;flex-direction:column;gap:14px}
+.slab .lab{font-size:14px;font-weight:600}
+.slab .big{font-size:clamp(34px,5vw,48px);font-weight:800;line-height:1;white-space:nowrap}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15px}
+.kv dt{font-weight:500}.kv dd{margin:0;text-align:right;font-weight:700;white-space:nowrap}
+.fig{position:relative;min-height:340px}.fig>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;padding:7px 10px;border-radius:5px;white-space:nowrap;opacity:0;transform:translate(-50%,-115%);transition:opacity .12s}
+.tip b{display:block;font-size:15px}
+.note{font-size:13px;color:var(--mute);margin:10px 0 0}
+.empty{border:1px dashed var(--line);border-radius:6px;padding:28px;color:var(--mute)}
+.moves{display:grid;gap:10px;margin-top:18px;max-width:900px}
+.mv{display:grid;grid-template-columns:9.5em minmax(0,1fr) 7.5em;gap:12px;align-items:center;font-size:15px}
+.mv .track{position:relative;height:14px}
+.mv .axis{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line)}
+.mv .bar{position:absolute;top:0;height:14px;border-radius:4px}
+.mv .val{text-align:right;font-weight:700;white-space:nowrap}
+.up{color:var(--up)}.down{color:var(--down)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px;margin-top:16px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-weight:600;color:var(--mute);font-size:13px}
+th:first-child,td:first-child{text-align:left}
+tbody tr:hover{background:var(--card)}
+.status{font-size:14px;color:var(--mute);margin:0 0 14px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px}
+.tabs a{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}
+.tabs a[aria-current=page]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tabs a:focus-visible{outline:2px solid var(--slab);outline-offset:2px}
+@media(max-width:760px){.top{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){table{font-size:13px}.mv{grid-template-columns:7em minmax(0,1fr) 6.2em;font-size:14px}}
+@media(prefers-reduced-motion:reduce){.tip{transition:none}}
+</style>
+</head>
+<body>
+<section class="band"><div class="wrap">
+  <nav class="tabs" id="tabs" aria-label="Whose net worth" hidden></nav>
+  <p class="status" id="status">Loading your log…</p>
+  <h1 id="headline">Your net worth, logged every morning</h1>
+  <p class="sub" id="lede">One snapshot from INDmoney each day at about 8:40 am IST: everything owned minus loans, for each person and the family together.</p>
+  <div class="top">
+    <div class="slab" id="slab">
+      <div><div class="lab" id="slabLab">Net worth</div><div class="big" id="nwBig">—</div></div>
+      <dl class="kv">
+        <dt>Since previous day</dt><dd id="dDay">—</dd>
+        <dt id="dStartLab">Since first log</dt><dd id="dStart">—</dd>
+        <dt>Assets</dt><dd id="kAssets">—</dd>
+        <dt>Home loan</dt><dd id="kLoan">—</dd>
+      </dl>
+    </div>
+    <div>
+      <div class="fig" id="fig"><svg id="chart" role="img" aria-label="Net worth by day"></svg><div class="tip" id="tip"></div></div>
+      <p class="note" id="chartNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+  <h2 id="movesH">What moved</h2>
+  <p class="sub" id="movesSub" style="margin-bottom:0">Change in each part of your net worth between the first and latest log.</p>
+  <div class="moves" id="moves"></div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+  <h2>Day by day</h2>
+  <p class="sub" style="margin-bottom:0">Values as INDmoney reported them that morning.</p>
+  <div class="scroll"><table id="tbl"><thead><tr><th>Date</th><th>Net worth</th><th>Day change</th><th>Mutual funds</th><th>Bonds</th><th>Indian stocks</th><th>US stocks</th><th>Other assets</th><th>Loans</th></tr></thead><tbody id="tbody"></tbody></table></div>
+</div></section>
+
+<script>
+{
+const $ = (id) => document.getElementById(id);
+const PARTS = [
+  ['mf','Mutual funds',1],['bond','Bonds',1],['stock','Indian stocks',1],['us_stock','US stocks',1],
+  ['nps','NPS',1],['sa','Savings',1],['vehicle','Vehicle',1],['other','Other',1],['home_loan','Home loan',-1]
+];
+const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const full = (v) => '₹' + Math.round(v).toLocaleString('en-IN');
+function short(v){
+  const a = Math.abs(v), s = v < 0 ? '−' : '';
+  if (a >= 1e7) return s + '₹' + (a/1e7).toFixed(2) + ' Cr';
+  if (a >= 1e5) return s + '₹' + (a/1e5).toFixed(2) + ' L';
+  if (a >= 1e3) return s + '₹' + (a/1e3).toFixed(1) + 'k';
+  return s + '₹' + Math.round(a);
+}
+const signed = (v) => (v > 0 ? '+' : v < 0 ? '−' : '±') + short(Math.abs(v)).replace('−','');
+const pct = (v, base) => base ? ((v/base)*100).toFixed(2) + '%' : '';
+const fmtDate = (d, opt) => new Date(d + 'T00:00:00').toLocaleDateString('en-IN', opt || {day:'numeric', month:'short'});
+function setDelta(el, v){ el.textContent = signed(v); }
+
+let rows = [];
+
+function draw(){
+  const s = $('chart'), fig = $('fig'), tip = $('tip');
+  const W = s.clientWidth, H = s.clientHeight;
+  if (!W || !H) return;
+  if (!rows.length){ s.innerHTML = ''; return; }
+  const narrow = W < 520;
+  const m = {l: narrow ? 8 : 64, r: 16, t: 18, b: 30};
+  const vals = rows.map(r => r.net_worth);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = Math.max((hi - lo) * 0.15, hi * 0.005, 1000);
+  lo -= pad; hi += pad;
+  const n = rows.length;
+  const x = (i) => n === 1 ? m.l + (W - m.l - m.r) / 2 : m.l + i * (W - m.l - m.r) / (n - 1);
+  const y = (v) => m.t + (hi - v) * (H - m.t - m.b) / (hi - lo);
+  let g = '';
+  const ticks = 4;
+  for (let k = 0; k <= ticks; k++){
+    const v = lo + (hi - lo) * k / ticks, yy = y(v).toFixed(1);
+    g += `<line x1="${m.l}" x2="${W - m.r}" y1="${yy}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`;
+    if (!narrow) g += `<text x="${m.l - 10}" y="${yy}" dy="4" text-anchor="end" font-size="12" fill="var(--mute)">${short(v)}</text>`;
+  }
+  const step = Math.max(1, Math.ceil(n / (narrow ? 4 : 8)));
+  rows.forEach((r, i) => {
+    if (i % step === 0 || i === n - 1) g += `<text x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="12" fill="var(--mute)">${fmtDate(r.date)}</text>`;
+  });
+  const path = rows.map((r, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(r.net_worth).toFixed(1)).join('');
+  if (n > 1) g += `<path d="${path}" fill="none" stroke="var(--plot)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const L = rows[n - 1];
+  g += `<circle cx="${x(n-1).toFixed(1)}" cy="${y(L.net_worth).toFixed(1)}" r="5" fill="var(--slab)" stroke="var(--plot)" stroke-width="2"/>`;
+  g += `<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--mute)" stroke-dasharray="3 3" opacity="0"/>`;
+  g += `<circle id="xd" r="5" fill="var(--plot)" stroke="var(--bg)" stroke-width="2" opacity="0"/>`;
+  g += `<rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="hit"/>`;
+  s.innerHTML = g;
+  const hit = s.querySelector('#hit'), xh = s.querySelector('#xh'), xd = s.querySelector('#xd');
+  const show = (ev) => {
+    const bx = s.getBoundingClientRect(), px = ev.clientX - bx.left;
+    let i = n === 1 ? 0 : Math.round((px - m.l) / ((W - m.l - m.r) / (n - 1)));
+    i = Math.max(0, Math.min(n - 1, i));
+    const r = rows[i], cx = x(i), cy = y(r.net_worth);
+    xh.setAttribute('x1', cx); xh.setAttribute('x2', cx); xh.setAttribute('opacity', 1);
+    xd.setAttribute('cx', cx); xd.setAttribute('cy', cy); xd.setAttribute('opacity', 1);
+    tip.innerHTML = '';
+    const d = document.createElement('span'); d.textContent = fmtDate(r.date, {weekday:'short', day:'numeric', month:'short'});
+    const b = document.createElement('b'); b.textContent = full(r.net_worth);
+    tip.append(d, b);
+    if (i > 0){ const c = document.createElement('span'); c.textContent = signed(r.net_worth - rows[i-1].net_worth) + ' vs previous day'; tip.append(c); }
+    tip.style.left = Math.max(80, Math.min(W - 80, cx)) + 'px'; tip.style.top = cy + 'px'; tip.style.opacity = 1;
+  };
+  const hide = () => { xh.setAttribute('opacity', 0); xd.setAttribute('opacity', 0); tip.style.opacity = 0; };
+  hit.addEventListener('pointermove', show); hit.addEventListener('pointerdown', show); hit.addEventListener('pointerleave', hide);
+}
+const ro = new ResizeObserver(draw); ro.observe($('chart'));
+
+function render(){
+  const n = rows.length;
+  if (!n){
+    $('status').textContent = 'No days logged yet. The first snapshot arrives with the next morning run.';
+    $('moves').innerHTML = '<div class="empty">Changes appear once two days are logged.</div>';
+    $('tbody').innerHTML = '';
+    draw(); return;
+  }
+  const L = rows[n - 1], F = rows[0], P = n > 1 ? rows[n - 2] : null;
+  const have = new Set(rows.map(r => r.date)), gaps = [];
+  for (let t = new Date(F.date + 'T00:00:00Z'); t <= new Date(L.date + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1)){
+    const d = t.toISOString().slice(0, 10); if (!have.has(d)) gaps.push(d);
+  }
+  const todayIST = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+  const nowH = new Date(Date.now() + 5.5 * 3600e3).getUTCHours() + new Date(Date.now() + 5.5 * 3600e3).getUTCMinutes() / 60;
+  const lateToday = L.date < todayIST && nowH >= 9.25;
+  let st = `${n} ${n === 1 ? 'day' : 'days'} logged · latest ${fmtDate(L.date, {weekday:'short', day:'numeric', month:'short', year:'numeric'})}`;
+  if (lateToday) st += ' · ⚠ today not logged yet: check INDmoney sign-in';
+  if (gaps.length) st += ` · ⚠ missing ${gaps.length} ${gaps.length === 1 ? 'day' : 'days'}: ${gaps.slice(-5).map(d => fmtDate(d)).join(', ')}`;
+  $('status').textContent = st;
+  $('status').style.color = (lateToday || gaps.length) ? 'var(--down)' : '';
+  $('nwBig').textContent = short(L.net_worth);
+  $('slabLab').textContent = 'Net worth on ' + fmtDate(L.date, {day:'numeric', month:'short'});
+  $('kAssets').textContent = short(L.assets);
+  $('kLoan').textContent = short(L.home_loan);
+  $('dStartLab').textContent = 'Since ' + fmtDate(F.date);
+  if (P){ setDelta($('dDay'), L.net_worth - P.net_worth); } else $('dDay').textContent = 'first day';
+  if (n > 1){
+    const ch = L.net_worth - F.net_worth;
+    setDelta($('dStart'), ch);
+    $('headline').textContent = `${VIEWS[view]} ${ch >= 0 ? 'up' : 'down'} ${short(Math.abs(ch)).replace('−','')} since ${fmtDate(F.date)}`;
+    $('lede').textContent = `${short(L.net_worth)} now, ${pct(ch, F.net_worth)} ${ch >= 0 ? 'higher' : 'lower'} than ${n - 1} ${n === 2 ? 'day' : 'days'} ago. Logged each morning from INDmoney: everything owned minus loans.`;
+    $('chartNote').textContent = 'Point at the line to see any day.';
+  } else {
+    $('dStart').textContent = '—';
+    $('headline').textContent = `${VIEWS[view]} ${short(L.net_worth)} on ${fmtDate(L.date)}`;
+    $('chartNote').textContent = 'The trend line starts once the second morning is logged.';
+  }
+  // What moved
+  if (n > 1){
+    const mv = PARTS.map(([k, name, sign]) => ({name, d: sign * (num(L[k]) - num(F[k]))})).filter(o => Math.abs(o.d) >= 1).sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+    const max = Math.max(1, ...mv.map(o => Math.abs(o.d)));
+    $('movesSub').textContent = `Effect of each part on your net worth, ${fmtDate(F.date)} to ${fmtDate(L.date)}. A smaller home loan counts as a gain.`;
+    $('moves').innerHTML = mv.length ? mv.map(o => {
+      const w = (Math.abs(o.d) / max * 50).toFixed(2), left = o.d >= 0 ? 50 : 50 - w;
+      return `<div class="mv"><span>${o.name}</span><span class="track"><span class="axis"></span><span class="bar" style="left:${left}%;width:${w}%;background:var(${o.d >= 0 ? '--up' : '--down'})"></span></span><span class="val ${o.d >= 0 ? 'up' : 'down'}">${signed(o.d)}</span></div>`;
+    }).join('') : '<div class="empty">Nothing changed between these days.</div>';
+  } else {
+    $('moves').innerHTML = '<div class="empty">Changes appear once two days are logged.</div>';
+  }
+  // Ledger, newest first
+  $('tbody').innerHTML = rows.slice().reverse().map((r, j) => {
+    const i = n - 1 - j, prev = i > 0 ? rows[i - 1] : null, dc = prev ? r.net_worth - prev.net_worth : null;
+    const other = num(r.nps) + num(r.sa) + num(r.vehicle) + num(r.other);
+    return `<tr><td>${fmtDate(r.date, {weekday:'short', day:'numeric', month:'short'})}</td><td><b>${full(r.net_worth)}</b></td><td class="${dc == null ? '' : dc >= 0 ? 'up' : 'down'}">${dc == null ? '—' : signed(dc)}</td><td>${short(num(r.mf))}</td><td>${short(num(r.bond))}</td><td>${short(num(r.stock))}</td><td>${short(num(r.us_stock))}</td><td>${short(other)}</td><td>${short(num(r.home_loan))}</td></tr>`;
+  }).join('');
+  draw();
+}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/, ID_RE = /^[a-z0-9-]{1,40}$/, COL_RE = /^[A-Za-z0-9_-]{1,60}$/;
+const FIELDS = ['net_worth','assets','liabilities','invested','home_loan','credit_card_due','mf','bond','stock','us_stock','nps','sa','vehicle','other'];
+let members = [], VIEWS = {}, view = '', store = {}, loaded = {}, subs = [];
+function clean(list){
+  return list.filter(r => typeof r.date === 'string' && DATE_RE.test(r.date) && Number.isFinite(Number(r.net_worth)))
+    .map(r => { const o = {date: r.date}; FIELDS.forEach(f => { o[f] = num(r[f]); }); return o; });
+}
+function familyRows(){
+  if (!members.length) return [];
+  const maps = members.map(m => new Map(store[m.id].map(r => [r.date, r])));
+  return store[members[0].id].filter(r => maps.every(mp => mp.has(r.date))).map(r => {
+    const o = {date: r.date}; FIELDS.forEach(f => { o[f] = maps.reduce((s, mp) => s + mp.get(r.date)[f], 0); }); return o;
+  });
+}
+function buildTabs(){
+  const nav = $('tabs'); nav.textContent = '';
+  VIEWS = {};
+  const list = members.length > 1 ? [{id: 'family', label: 'Family'}].concat(members) : members;
+  list.forEach(m => {
+    VIEWS[m.id] = m.id === 'family' ? 'Family net worth' : (members.length > 1 ? m.label + "'s net worth" : 'Net worth');
+    const a = document.createElement('a'); a.href = '#' + m.id; a.dataset.v = m.id; a.textContent = m.label; nav.append(a);
+  });
+  nav.hidden = list.length < 2;
+}
+function pick(){
+  if (!members.length) return;
+  const h = location.hash.slice(1), first = members.length > 1 ? 'family' : members[0].id;
+  view = VIEWS[h] ? h : first;
+  document.querySelectorAll('#tabs a').forEach(a => a.setAttribute('aria-current', a.dataset.v === view ? 'page' : 'false'));
+  if (!members.every(m => loaded[m.id])) return;
+  rows = view === 'family' ? familyRows() : store[view];
+  render();
+}
+window.addEventListener('hashchange', pick);
+(async () => {
+  const db = await claude.use('db');
+  if (!db){ $('status').textContent = 'Sign in to claude.ai to see your log.'; return; }
+  const timer = setTimeout(() => { $('status').textContent = "Your log can't be reached right now. It will appear when the connection returns."; }, 10000);
+  const fail = () => { clearTimeout(timer); $('status').textContent = "Your log couldn't be loaded."; };
+  db.doc('config/setup').onSnapshot((snap) => {
+    if (!snap.metadata.fromCache) clearTimeout(timer);
+    const cfg = snap.exists ? snap.data() : null;
+    const next = (cfg && Array.isArray(cfg.members) ? cfg.members : [])
+      .filter(m => m && ID_RE.test(String(m.id)) && m.id !== 'family' && COL_RE.test(String(m.collection)) && typeof m.label === 'string')
+      .slice(0, 8).map(m => ({id: m.id, label: m.label.slice(0, 40), collection: m.collection}));
+    if (!next.length){ $('status').textContent = 'Setup not finished yet: ask Claude to run the INDmoney net worth log skill.'; return; }
+    if (JSON.stringify(next) === JSON.stringify(members)) return;
+    subs.forEach(u => u()); subs = [];
+    members = next; store = {}; loaded = {};
+    members.forEach(m => { store[m.id] = []; loaded[m.id] = false; });
+    buildTabs();
+    members.forEach(m => subs.push(db.collection(m.collection).orderBy('date').onSnapshot((s) => {
+      store[m.id] = clean(s.docs.map(d => d.data() || {})); loaded[m.id] = true; pick();
+    }, fail)));
+    pick();
+  }, fail);
+})();
+}
+</script>
+</body>
+</html>
